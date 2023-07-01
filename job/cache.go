@@ -80,7 +80,7 @@ func (c *MemoryJobCache) Start(persistWaitTime time.Duration) {
 	}
 
 	// Process-level defer for shutting down the db.
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
 		s := <-ch
@@ -88,7 +88,10 @@ func (c *MemoryJobCache) Start(persistWaitTime time.Duration) {
 		log.Infof("Shutting down....")
 
 		// Persist all jobs to database
-		log.Errorln(c.Persist())
+		err = c.Persist()
+		if err != nil {
+			log.Errorln(err)
+		}
 
 		// Close the database
 		c.jobDB.Close()
@@ -254,7 +257,7 @@ func (c *LockFreeJobCache) Start(persistWaitTime time.Duration, jobstatTtl time.
 	}
 
 	// Process-level defer for shutting down the db.
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
 		s := <-ch
